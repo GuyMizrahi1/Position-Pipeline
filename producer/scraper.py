@@ -45,7 +45,8 @@ def organize_position_list(soup: BeautifulSoup, root_prefix: str) -> List[str]:
     countries_section = soup.select(f'{root_prefix} .block-careers-list .container-fluid .list h3')
 
     if not countries_section:  # Single country
-        position_elements = soup.select(f'{root_prefix} .block-careers-list .container-fluid .list > ul li a .link-text')
+        position_elements = soup.select(
+            f'{root_prefix} .block-careers-list .container-fluid .list > ul li a .link-text')
         insert_position_names_into_position_list(positions, position_elements)
     else:  # Multiple countries
         for section in countries_section:
@@ -57,23 +58,35 @@ def organize_position_list(soup: BeautifulSoup, root_prefix: str) -> List[str]:
     return positions
 
 
+def connect_to_selenium() -> webdriver.Chrome:
+    options = webdriver.ChromeOptions()
+    options.add_argument('--headless')
+    options.add_argument('--no-sandbox')
+    SELENIUM_URL = "http://selenium-chrome:4444"
+    driver = webdriver.Remote(command_executor=SELENIUM_URL, options=options)
+    return driver
+
+
 def scrape_open_positions(url: str) -> Tuple[List[str], str, str]:
     """Scrapes job position titles, handling different country and 'no positions' scenarios."""
-    driver = webdriver.Chrome()
-    driver.get(url)
+    driver = None
+    try:
+        driver = connect_to_selenium()
+        driver.get(url)
 
-    wait = WebDriverWait(driver, 10)
-    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.block-careers-list')))
+        wait = WebDriverWait(driver, 10)
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '.block-careers-list')))
 
-    soup = BeautifulSoup(driver.page_source, 'html.parser')
-    root_prefix = 'body .global-wrapper .content'
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        root_prefix = 'body .global-wrapper .content'
 
-    location_filter = driver.find_element(By.CSS_SELECTOR, get_filter_path(root_prefix, 1))
-    department_filter = driver.find_element(By.CSS_SELECTOR, get_filter_path(root_prefix, 2))
+        location_filter = driver.find_element(By.CSS_SELECTOR, get_filter_path(root_prefix, 1))
+        department_filter = driver.find_element(By.CSS_SELECTOR, get_filter_path(root_prefix, 2))
 
-    location_str, department_str = process_filters(location_filter, department_filter)
+        location_str, department_str = process_filters(location_filter, department_filter)
 
-    positions = organize_position_list(soup, root_prefix)
-
-    driver.quit()
+        positions = organize_position_list(soup, root_prefix)
+    finally:
+        if driver:
+            driver.quit()
     return positions, location_str, department_str

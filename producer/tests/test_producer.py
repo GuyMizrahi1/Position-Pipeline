@@ -118,13 +118,13 @@ class TestProducerScraper(unittest.TestCase):
 
         self.assertEqual(positions, ["Backend Developer", "Customer Success Manager", "Customer Success Manager"])
 
-    @patch("producer.scraper.webdriver.Chrome")
+    @patch("producer.scraper.webdriver.Remote")
     @patch("producer.scraper.WebDriverWait")
     @patch("producer.scraper.BeautifulSoup")
-    def test_scrape_open_positions(self, mock_beautifulsoup, mock_webdriverwait, mock_chrome):
+    def test_scrape_open_positions(self, mock_beautifulsoup, mock_webdriverwait, mock_remote):
         """Test scraping job position titles."""
         mock_driver = MagicMock()
-        mock_chrome.return_value = mock_driver
+        mock_remote.return_value = mock_driver
         mock_soup = MagicMock()
         mock_beautifulsoup.return_value = mock_soup
         mock_soup.select_one.return_value = None

@@ -3,7 +3,6 @@ import pickle
 import logging
 import datetime
 import pandas as pd
-from dotenv import load_dotenv
 from kafka import KafkaProducer
 from scraper import scrape_open_positions
 from kafka.errors import KafkaError, NoBrokersAvailable
@@ -35,8 +34,6 @@ def create_and_send_parquet(positions: list, location_str: str, department_str: 
 
 
 def main():
-    load_dotenv()
-
     event_hubs_connection_string = os.environ.get("EVENT_HUBS_CONNECTION_STRING")
     event_hub_name = os.environ.get("EVENT_HUB_NAME")
     ssl_certificate_path = os.environ.get("SSL_CERTIFICATE_PATH")

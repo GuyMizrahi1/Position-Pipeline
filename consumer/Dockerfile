@@ -10,4 +10,4 @@ RUN apt-get update && \
 
 COPY . /app
 
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["python", "consumer/main.py"]

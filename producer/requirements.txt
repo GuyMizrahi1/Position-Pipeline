@@ -1,8 +1,0 @@
-requests
-beautifulsoup4
-kafka-python
-pandas
-pyarrow
-azure-storage-blob
-python-dotenv
-selenium
