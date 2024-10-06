@@ -1,0 +1,55 @@
+version: '3.8'
+services:
+
+  selenium-chrome:
+    # image: selenium/standalone-chrome:129.0
+    image: seleniarm/standalone-chromium:124.0  # Use that image for mac with M1 chip or future versions
+    shm_size: 2gb
+    ports:
+      - "4444:4444"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://selenium-chrome:4444/status" ]
+      interval: 30s  # Check every 30 seconds
+      timeout: 15s
+      retries: 10  # Allow up to 10 attempts
+      start_period: 120s  # Allow 120 seconds before starting health checks
+    networks:
+      - app-network
+
+  producer-service:
+    image: position-producer:latest
+    environment:
+      KAFKA_BROKER: "${KAFKA_BROKER}"
+      KAFKA_TOPIC: "${KAFKA_TOPIC}"
+      EVENT_HUBS_CONNECTION_STRING: "${EVENT_HUBS_CONNECTION_STRING}"
+      EVENT_HUB_NAME: "${EVENT_HUB_NAME}"
+      SSL_CERTIFICATE_PATH: "${SSL_CERTIFICATE_PATH}"
+    build:
+      dockerfile: producer/Dockerfile
+    depends_on:
+      selenium-chrome:
+        condition: service_healthy  # Wait until Selenium is healthy
+    networks:
+      - app-network
+
+  consumer-service:
+    image: position-consumer:latest
+    environment:
+      KAFKA_BROKER: "${KAFKA_BROKER}"
+      KAFKA_TOPIC: "${KAFKA_TOPIC}"
+      EVENT_HUBS_CONNECTION_STRING: "${EVENT_HUBS_CONNECTION_STRING}"
+      EVENT_HUB_NAME: "${EVENT_HUB_NAME}"
+      SSL_CERTIFICATE_PATH: "${SSL_CERTIFICATE_PATH}"
+      AZURE_STORAGE_CONNECTION_STRING: "${AZURE_STORAGE_CONNECTION_STRING}"
+      BLOB_CONTAINER_NAME: "${BLOB_CONTAINER_NAME}"
+    build:
+      dockerfile: consumer/Dockerfile
+    depends_on:
+      producer-service:
+        condition: service_completed_successfully  # Wait until Producer is done
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

@@ -52,18 +52,18 @@ This project implements a robust and scalable data pipeline designed to scrape o
        │   │   ├── test_consumer.py
        │   ├── Dockerfile
        │   ├── main.py
-       │   ├── requirements.txt
        ├── producer/
        │   ├── tests/
        │   │   ├── test_producer.py
        │   ├── Dockerfile
        │   ├── main.py
-       │   ├── requirements.txt
        │   ├── scraper.py
+       ├── venv/
        ├── .env
        ├── .gitignore
+       ├── docker-compose.yaml
        ├── README.md
-       └── venv/
+       └── requirements.txt
        ```
    * Add the following environment variables, replacing placeholders with your actual values:
 
@@ -73,36 +73,29 @@ This project implements a robust and scalable data pipeline designed to scrape o
        AZURE_STORAGE_CONNECTION_STRING=<your_storage_connection_string>
        BLOB_CONTAINER_NAME=<your_blob_container_name> 
        KAFKA_TOPIC=<your_kafka_topic>  # The name of your Event Hub instance
-       SSL_CERTIFICATE_PATH=./venv/lib/python3.11/site-packages/certifi/cacert.pem 
+       SSL_CERTIFICATE_PATH='venv/lib/python3.11/site-packages/certifi/cacert.pem'
        ```
+   * The docker-compose.yaml gets the environment variables from the .env file.
+     and runs first the selenium container for getting the url connection, then the producer container for scraping 
+     and finally the consumer container for store the results in cloud storage .
 
 
 ## Running the Pipeline Locally with Docker
 
 1. Build Docker Images:
      ```bash
-     docker build -t position-producer ./producer
-     docker build -t position-consumer ./consumer
+     docker-compose build
      ```
+
 2. Run the Producer Containers:
    ```bash
-   docker run -d --env-file=.env --network host position-producer
+   docker-compose up
    ```
-   * Note: The command above will print the ```container_id``` to the console, \
-   you're able to see the logs of the container by running the following command: \
-   ```bash
-   docker logs <container_id>
-   ```
-3. Run the Consumer Containers:
-   ```bash
-   docker run -d --env-file=.env position-consumer
-   ```
-   ```bash
-   docker logs <container_id>
-   ```
- * The -d flag runs the containers in detached mode (in the background).
- * The --env-file=.env option passes the environment variables from your .env file to the Docker containers.
 
+3. Turn off the selenium container:
+   ```bash
+   docker-compose down
+   ```
 ## Testing
 Unit tests: \
 2 individual test files which located in tests folder in both folders - producer & consumer. \
@@ -112,4 +105,12 @@ For running the unit tests:
 PYTHONPATH=./producer python -m unittest discover producer/tests
 PYTHONPATH=./consumer python -m unittest discover consumer/tests
 ```
+
+## Examples of screenshott from the pipeline
+### KafkaRequests 
+<img src='screenshots/KafkaRequests.jpeg' title='Kafka Requests' style='max-width:600px'></img>
+### Log With Parquet Top 5
+<img src='screenshots/LogWithParquetTop5.jpeg' title='Log With Parquet Top 5' style='max-width:600px'></img>
+### Container ScreenShot
+<img src='screenshots/ContainerScreenShot.jpeg' title='Container ScreenShot' style='max-width:600px'></img>
 

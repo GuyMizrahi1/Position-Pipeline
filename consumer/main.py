@@ -4,7 +4,6 @@ import pickle
 import logging
 import threading
 import pandas as pd
-from dotenv import load_dotenv
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError
 from azure.storage.blob import BlobServiceClient
@@ -49,9 +48,21 @@ def process_and_upload_data(message: ConsumerRecord, blob_service_client: BlobSe
         logger.error(f"Error processing or uploading data: {e}")
 
 
-def main():
-    load_dotenv()
+def run_over_messages(consumer: KafkaConsumer, blob_service_client: BlobServiceClient,
+                      blob_container_name: str) -> None:
+    """ Processes messages from a Kafka consumer and uploads data to Azure Blob Storage.  """
+    timer = threading.Timer(30, lambda: logger.info("Consumer loop timed out started."))
+    timer.start()
 
+    for message in consumer:
+        timer.cancel()
+        process_and_upload_data(message, blob_service_client, blob_container_name)
+
+        timer = threading.Timer(30, lambda: logger.info("Consumer loop timed out restarted."))
+        timer.start()
+
+
+def main():
     event_hubs_connection_string = os.environ.get("EVENT_HUBS_CONNECTION_STRING")
     event_hub_name = os.environ.get("EVENT_HUB_NAME")
     ssl_certificate_path = os.environ.get("SSL_CERTIFICATE_PATH")
@@ -94,15 +105,7 @@ def main():
         logger.error(f"Error connecting to Azure Blob Storage: {e}")
         exit(1)
 
-    timer = threading.Timer(30, lambda: logger.info("Consumer loop timed out started."))
-    timer.start()
-
-    for message in consumer:
-        timer.cancel()
-        process_and_upload_data(message, blob_service_client, blob_container_name)
-
-        timer = threading.Timer(30, lambda: logger.info("Consumer loop timed out restarted."))
-        timer.start()
+    run_over_messages(consumer, blob_service_client, blob_container_name)
 
     logger.info("Consumer exiting gracefully.")
 
